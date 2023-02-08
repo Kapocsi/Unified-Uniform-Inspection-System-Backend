@@ -1,7 +1,8 @@
 mod auth;
 mod database;
 
-use actix_web::web::service;
+use actix_web::middleware::{Logger, NormalizePath};
+
 use database::data;
 use serde::{Deserialize, Serialize};
 
@@ -245,9 +246,11 @@ async fn main() -> std::io::Result<()> {
         .set_private_key_file("key.pem", SslFiletype::PEM)
         .unwrap();
     ssl_builder.set_certificate_chain_file("cert.pem").unwrap();
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     HttpServer::new(|| {
         App::new()
+            .wrap(Logger::default())
             .service(
                 scope("/api")
                     .service(get_user)
@@ -274,6 +277,7 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin("http://uuis.kapocsi.ca")
                     .allowed_origin("http://uuis.kapocsi.ca"),
             )
+            .wrap(NormalizePath::trim())
     })
     .bind_openssl("127.0.0.1:8080", ssl_builder)
     .unwrap()
