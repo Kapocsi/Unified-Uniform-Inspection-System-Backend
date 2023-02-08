@@ -194,6 +194,10 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
+
+
+    
     HttpServer::new(|| {
         App::new()
             .service(
@@ -209,13 +213,13 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 spa()
-                    .index_file("../svelt-front-end/build/index.html")
+                    .index_file("../yew-front-end/dist/index.html")
                     .static_resources_mount("")
-                    .static_resources_location("../svelt-front-end/../svelt-front-end/build/")
+                    .static_resources_location("../yew-front-end/dist")
                     .finish(),
             )
     })
-    .bind(("0.0.0.0", 8000))?
+    .bind(("127.0.0.1", 8000))?
     .run()
     .await
 }
