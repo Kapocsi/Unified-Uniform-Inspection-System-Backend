@@ -60,6 +60,21 @@ async fn get_qrcode_for_user(path: web::Path<(String)>) -> Result<HttpResponse> 
     }
 }
 
+#[post("validate_uuid/{uuid}")]
+async fn validate_uuid(path: web::Path<(String)>) -> Result<HttpResponse> {
+    use std::path::Path;
+
+    let user_id = path.into_inner();
+
+    let exitst = Path::new(format!("database/users/{user_id}.json").as_str()).exists();
+    let response = match exitst {
+        true => "true",
+        false => "false",
+    };
+
+    Ok(HttpResponse::Ok().body(response))
+}
+
 #[get("/newuser/")]
 async fn generate_user() -> Result<HttpResponse> {
     let new_user = data::User::new();
@@ -241,6 +256,7 @@ async fn main() -> std::io::Result<()> {
                     .service(signup)
                     .service(login)
                     .service(claim_user)
+                    .service(validate_uuid)
                     .service(get_qrcode_for_user),
             )
             .service(
