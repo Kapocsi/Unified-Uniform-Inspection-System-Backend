@@ -117,9 +117,11 @@ async fn add_inspection_to_user(mut payload: web::Payload) -> Result<HttpRespons
 
             Ok(actix_web::HttpResponse::Ok().finish())
         }
-        auth_database::TokenResponse::Invalid => Ok(actix_web::HttpResponse::Forbidden().finish()),
+        auth_database::TokenResponse::Invalid => {
+            Err(actix_web::error::ErrorForbidden("Invalid Token"))
+        }
         auth_database::TokenResponse::Expired => {
-            Ok(actix_web::HttpResponse::Unauthorized().finish())
+            Err(actix_web::error::ErrorForbidden("Token Expired"))
         }
     }
 
