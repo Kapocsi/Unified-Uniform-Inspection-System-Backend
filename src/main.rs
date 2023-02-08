@@ -209,9 +209,9 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 spa()
-                    .index_file("../svelt-front-end/build/index.html")
+                    .index_file("../front-end/build/index.html")
                     .static_resources_mount("")
-                    .static_resources_location("../svelt-front-end/../svelt-front-end/build/")
+                    .static_resources_location("../front-end/../front-end/build/")
                     .finish(),
             )
     })
