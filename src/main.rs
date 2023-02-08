@@ -1,7 +1,8 @@
 mod auth;
 mod database;
 
-use actix_web::web::service;
+use actix_web::middleware::{Logger, NormalizePath};
+
 use database::data;
 use serde::{Deserialize, Serialize};
 
@@ -248,6 +249,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
+            .wrap(Logger::default())
             .service(
                 scope("/api")
                     .service(get_user)
@@ -276,6 +278,7 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin("https://uuis.kapocsi.ca"),
 
             )
+            .wrap(NormalizePath::trim())
     })
     .bind_openssl("0.0.0.0:443", ssl_builder)
     .unwrap()
