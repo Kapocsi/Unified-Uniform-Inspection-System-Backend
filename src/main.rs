@@ -9,7 +9,6 @@ use actix_web_lab::web::spa;
 use futures_util::StreamExt as _;
 
 use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Result};
-use std::env;
 use std::fs;
 
 use std::string;
@@ -195,11 +194,6 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!(
-        "LAUNCHING UUIS-BACKEND on port 8000 from dir : {:?}",
-        env::current_dir().unwrap()
-    );
-
     HttpServer::new(|| {
         App::new()
             .service(
@@ -215,9 +209,9 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 spa()
-                    .index_file("../yew-front-end/dist/index.html")
+                    .index_file("../svelt-front-end/build/index.html")
                     .static_resources_mount("")
-                    .static_resources_location("../yew-front-end/dist")
+                    .static_resources_location("../svelt-front-end/../svelt-front-end/build/")
                     .finish(),
             )
     })
