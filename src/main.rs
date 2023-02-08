@@ -281,8 +281,7 @@ async fn main() -> std::io::Result<()> {
             )
             .wrap(NormalizePath::trim())
     })
-    .bind_openssl("127.0.0.1:8080", ssl_builder)
-    .unwrap()
+    .bind(("0.0.0.0", 80))?
     .run()
     .await
 }
