@@ -246,6 +246,8 @@ async fn main() -> std::io::Result<()> {
         .set_private_key_file("key.pem", SslFiletype::PEM)
         .unwrap();
     ssl_builder.set_certificate_chain_file("cert.pem").unwrap();
+
+    // Add login config
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     HttpServer::new(|| {
