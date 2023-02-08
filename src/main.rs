@@ -39,12 +39,16 @@ async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
     ))
 }
 
-#[post("/newuser/")]
+#[get("/newuser/")]
 async fn generate_user() -> Result<HttpResponse> {
     let new_user = data::User::new();
     new_user.push_to_data_base();
 
-    let response = HttpResponse::Found().body(new_user.uuid);
+    println!("Generated new user {}", new_user.uuid);
+
+    let response = HttpResponse::Found()
+        .append_header(("location", format!("/u/{}", new_user.uuid)))
+        .body(new_user.uuid);
     Ok(response)
 }
 
