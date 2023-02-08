@@ -200,9 +200,9 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 async fn main() -> std::io::Result<()> {
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     ssl_builder
-        .set_private_key_file("key.pem", SslFiletype::PEM)
+        .set_private_key_file("/etc/letsencrypt/live/uuis.kapocsi.ca/privkey.pem", SslFiletype::PEM)
         .unwrap();
-    ssl_builder.set_certificate_chain_file("cert.pem").unwrap();
+    ssl_builder.set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem").unwrap();
 
     HttpServer::new(|| {
         App::new()
@@ -228,10 +228,12 @@ async fn main() -> std::io::Result<()> {
                 Cors::default()
                     .allowed_origin("http://localhost")
                     .allowed_origin("http://uuis.kapocsi.ca")
-                    .allowed_origin("http://uuis.kapocsi.ca"),
+                    .allowed_origin("http://localhost:5173")
+                    .allowed_origin("https://uuis.kapocsi.ca"),
+
             )
     })
-    .bind_openssl("127.0.0.1:8080", ssl_builder)
+    .bind_openssl("0.0.0.0:443", ssl_builder)
     .unwrap()
     .run()
     .await
