@@ -5,6 +5,8 @@ use actix_web::web::service;
 use database::data;
 use serde::{Deserialize, Serialize};
 
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+
 use actix_web_lab::web::spa;
 use futures_util::StreamExt as _;
 
@@ -12,6 +14,8 @@ use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Resul
 use std::fs;
 
 use std::string;
+
+use actix_cors::Cors;
 
 #[post("/user")]
 async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
@@ -194,6 +198,12 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    ssl_builder
+        .set_private_key_file("key.pem", SslFiletype::PEM)
+        .unwrap();
+    ssl_builder.set_certificate_chain_file("cert.pem").unwrap();
+
     HttpServer::new(|| {
         App::new()
             .service(
@@ -210,12 +220,19 @@ async fn main() -> std::io::Result<()> {
             .service(
                 spa()
                     .index_file("../front-end/build/index.html")
-                    .static_resources_mount("")
-                    .static_resources_location("../front-end/../front-end/build/")
+                    .static_resources_mount("/")
+                    .static_resources_location("../front-end/../front-end/build")
                     .finish(),
             )
+            .wrap(
+                Cors::default()
+                    .allowed_origin("http://localhost")
+                    .allowed_origin("http://uuis.kapocsi.ca")
+                    .allowed_origin("http://uuis.kapocsi.ca"),
+            )
     })
-    .bind(("0.0.0.0", 80))?
+    .bind_openssl("127.0.0.1:8080", ssl_builder)
+    .unwrap()
     .run()
     .await
 }
