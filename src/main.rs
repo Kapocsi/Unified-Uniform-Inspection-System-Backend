@@ -39,6 +39,27 @@ async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
     ))
 }
 
+#[get("/user/img/{user_id}.svg")]
+async fn get_qrcode_for_user(path: web::Path<(String)>) -> Result<HttpResponse> {
+    use qrcode::QrCode;
+
+    let user_id = path.into_inner();
+    match data::User::read_from_database(user_id.clone()).is_ok() {
+        true => {
+            let qr_code =
+                QrCode::new(format!("https://uuis.kapocsi.ca/u/{}", user_id).into_bytes()).unwrap();
+            // .map_err(|_| actix_web::error::ErrorBadRequest("Could not parse uuid"))?;
+            Ok(HttpResponse::Ok().content_type("image/svg+xml").body(
+                qr_code
+                    .render::<qrcode::render::svg::Color>()
+                    .min_dimensions(300, 300)
+                    .build(),
+            ))
+        }
+        false => Err(actix_web::error::ErrorBadRequest("User not found")),
+    }
+}
+
 #[get("/newuser/")]
 async fn generate_user() -> Result<HttpResponse> {
     let new_user = data::User::new();
@@ -219,7 +240,8 @@ async fn main() -> std::io::Result<()> {
                     .service(return_inspections)
                     .service(signup)
                     .service(login)
-                    .service(claim_user),
+                    .service(claim_user)
+                    .service(get_qrcode_for_user),
             )
             .service(
                 spa()
