@@ -3,6 +3,7 @@ mod database;
 
 use actix_web::middleware::{Logger, NormalizePath};
 
+use actix_web::web::service;
 use database::data;
 use serde::{Deserialize, Serialize};
 
@@ -240,14 +241,31 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), std::io::Error> {
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     ssl_builder
-        .set_private_key_file("/etc/letsencrypt/live/uuis.kapocsi.ca/privkey.pem", SslFiletype::PEM)
+        .set_private_key_file(
+            "/etc/letsencrypt/live/uuis.kapocsi.ca/privkey.pem",
+            SslFiletype::PEM,
+        )
         .unwrap();
-    ssl_builder.set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem").unwrap();
+    ssl_builder
+        .set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem")
+        .unwrap();
 
-    HttpServer::new(|| {
+    let api = scope("/api")
+        .service(get_user)
+        .service(generate_user)
+        .service(return_inspections)
+        .service(add_inspection_to_user)
+        .service(return_inspections)
+        .service(signup)
+        .service(login)
+        .service(claim_user)
+        .service(validate_uuid)
+        .service(get_qrcode_for_user);
+
+    let secure_server = HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
             .service(
@@ -276,12 +294,31 @@ async fn main() -> std::io::Result<()> {
                     .allowed_origin("http://uuis.kapocsi.ca")
                     .allowed_origin("http://localhost:5173")
                     .allowed_origin("https://uuis.kapocsi.ca"),
-
             )
             .wrap(NormalizePath::trim())
     })
     .bind_openssl("0.0.0.0:443", ssl_builder)
     .unwrap()
-    .run()
-    .await
+    .bind("0.0.0.0:80")
+    .unwrap()
+    .run();
+
+    let server = HttpServer::new(|| {
+        App::new().wrap(Logger::default()).service(
+            spa()
+                .index_file("../front-end/build/index.html")
+                .static_resources_mount("/")
+                .static_resources_location("../front-end/../front-end/build")
+                .finish(),
+        )
+    })
+    .bind("0.0.0.0:8080")
+    .unwrap()
+    .run();
+
+    use futures::future;
+
+    future::try_join(secure_server, server).await?;
+
+    Ok(())
 }
