@@ -253,7 +253,7 @@ async fn main() -> Result<(), std::io::Error> {
         .set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem")
         .unwrap();
 
-    let secure_server = HttpServer::new(|| {
+    HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
             .service(
@@ -285,28 +285,10 @@ async fn main() -> Result<(), std::io::Error> {
             )
             .wrap(NormalizePath::trim())
     })
-    .bind_openssl("0.0.0.0:443", ssl_builder)
-    .unwrap()
-    .bind("0.0.0.0:80")
-    .unwrap()
-    .run();
-
-    let server = HttpServer::new(|| {
-        App::new().wrap(Logger::default()).service(
-            spa()
-                .index_file("../front-end/build/index.html")
-                .static_resources_mount("/")
-                .static_resources_location("../front-end/../front-end/build")
-                .finish(),
-        )
-    })
-    .bind("0.0.0.0:8080")
-    .unwrap()
-    .run();
-
-    use futures::future;
-
-    future::try_join(secure_server, server).await?;
+    .bind_openssl("0.0.0.0:443", ssl_builder)?
+    .bind("0.0.0.0:80")?
+    .run()
+    .await?;
 
     Ok(())
 }
