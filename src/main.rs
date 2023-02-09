@@ -253,18 +253,6 @@ async fn main() -> Result<(), std::io::Error> {
         .set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem")
         .unwrap();
 
-    let api = scope("/api")
-        .service(get_user)
-        .service(generate_user)
-        .service(return_inspections)
-        .service(add_inspection_to_user)
-        .service(return_inspections)
-        .service(signup)
-        .service(login)
-        .service(claim_user)
-        .service(validate_uuid)
-        .service(get_qrcode_for_user);
-
     let secure_server = HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
