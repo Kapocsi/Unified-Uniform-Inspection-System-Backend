@@ -90,6 +90,17 @@ async fn generate_user() -> Result<HttpResponse> {
     Ok(response)
 }
 
+#[post("/newuser/")]
+async fn post_generate_user() -> Result<HttpResponse> {
+    let new_user = data::User::new();
+    new_user.push_to_data_base();
+
+    println!("Generated new user {}", new_user.uuid);
+
+    let response = HttpResponse::Found().body(new_user.uuid);
+    Ok(response)
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct InspectPost {
     user_uuid: String,
