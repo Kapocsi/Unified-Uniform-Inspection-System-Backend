@@ -278,6 +278,7 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(login)
                     .service(claim_user)
                     .service(validate_uuid)
+                    .service(post_generate_user)
                     .service(get_qrcode_for_user),
             )
             .service(
