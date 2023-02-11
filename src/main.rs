@@ -280,14 +280,6 @@ async fn main() -> Result<(), std::io::Error> {
     let secure_server = HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
-            .wrap_fn(|req, srv| {
-                let fut = srv.call(req);
-                async {
-                    let mut res = fut.await?;
-                    dbg!(&res);
-                    Ok(res)
-                }
-            })
             .service(
                 scope("/api")
                     .service(get_user)
@@ -319,13 +311,14 @@ async fn main() -> Result<(), std::io::Error> {
             .wrap(NormalizePath::trim())
     })
     .bind_openssl("0.0.0.0:443", ssl_builder)?
-    .run()
-    .await?;
-
+    .run();
     let server = HttpServer::new(|| App::new().service(http_upgrade))
         .bind("0.0.0.0:80")?
-        .run()
-        .await?;
+        .run();
+
+    let (secure_server_result, server_result) = futures::join!(server, secure_server);
+    secure_server_result?;
+    server_result?;
 
     Ok(())
 }
