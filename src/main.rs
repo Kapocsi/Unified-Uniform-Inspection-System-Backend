@@ -1,7 +1,9 @@
 mod auth;
 mod database;
 
-use actix_web::middleware::{Logger, NormalizePath};
+use actix_web::dev::{Service, ServiceRequest, ServiceResponse};
+use actix_web::middleware::{self, Logger, NormalizePath};
+use actix_web::HttpRequest;
 
 use actix_web::web::service;
 use database::data;
@@ -251,6 +253,17 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
     }
 }
 
+#[actix_web::get("/{url:.*}")]
+async fn http_upgrade() -> Result<HttpResponse> {
+    let file_string = fs::read_to_string("../UUIS-backend/https_upgrade.html")
+        .unwrap()
+        .replace("\n", "");
+
+    Ok(HttpResponse::Found()
+        .content_type("text/html")
+        .body(file_string))
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
@@ -264,9 +277,17 @@ async fn main() -> Result<(), std::io::Error> {
         .set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem")
         .unwrap();
 
-    HttpServer::new(|| {
+    let secure_server = HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
+            .wrap_fn(|req, srv| {
+                let fut = srv.call(req);
+                async {
+                    let mut res = fut.await?;
+                    dbg!(&res);
+                    Ok(res)
+                }
+            })
             .service(
                 scope("/api")
                     .service(get_user)
@@ -298,9 +319,13 @@ async fn main() -> Result<(), std::io::Error> {
             .wrap(NormalizePath::trim())
     })
     .bind_openssl("0.0.0.0:443", ssl_builder)?
-    .bind("0.0.0.0:80")?
     .run()
     .await?;
+
+    let server = HttpServer::new(|| App::new().service(http_upgrade))
+        .bind("0.0.0.0:80")?
+        .run()
+        .await?;
 
     Ok(())
 }
