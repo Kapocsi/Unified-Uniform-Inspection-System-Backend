@@ -1,11 +1,11 @@
 mod auth;
 mod database;
 
-use actix_web::dev::{Service, ServiceRequest, ServiceResponse};
-use actix_web::middleware::{self, Logger, NormalizePath};
-use actix_web::HttpRequest;
 
-use actix_web::web::service;
+use actix_web::middleware::{Logger, NormalizePath};
+
+
+
 use database::data;
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,7 @@ use futures_util::StreamExt as _;
 use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Result};
 use std::fs;
 
-use std::string;
+
 
 use actix_cors::Cors;
 
@@ -44,7 +44,7 @@ async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
 }
 
 #[get("/user/img/{user_id}.svg")]
-async fn get_qrcode_for_user(path: web::Path<(String)>) -> Result<HttpResponse> {
+async fn get_qrcode_for_user(path: web::Path<String>) -> Result<HttpResponse> {
     use qrcode::QrCode;
 
     let user_id = path.into_inner();
@@ -65,7 +65,7 @@ async fn get_qrcode_for_user(path: web::Path<(String)>) -> Result<HttpResponse> 
 }
 
 #[post("validate_uuid/{uuid}")]
-async fn validate_uuid(path: web::Path<(String)>) -> Result<HttpResponse> {
+async fn validate_uuid(path: web::Path<String>) -> Result<HttpResponse> {
     use std::path::Path;
 
     let user_id = path.into_inner();

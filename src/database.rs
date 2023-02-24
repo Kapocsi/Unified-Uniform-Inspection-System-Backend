@@ -1,7 +1,7 @@
 #![warn(unused_imports, dead_code)]
 
 pub mod data {
-    use std::{cmp, fs};
+    use std::{fs};
 
     use actix_web::HttpResponse;
     use serde::{Deserialize, Serialize};

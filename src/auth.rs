@@ -33,11 +33,10 @@ pub mod database {
         pub tokens: Vec<Token>,
     }
 
-    #[derive(Debug)]
     pub enum UserError {
         UsernameDuplicate,
-        UserNotFound,
-        CredentialsIncorrect,
+        //UserNotFound,
+        //CredentialsIncorrect,
     }
 
     impl User {
@@ -140,7 +139,8 @@ pub mod database {
             fs::write(
                 "./database/auth_users/users.json",
                 serde_json::to_string(&users).expect("failed to Serialize"),
-            );
+            )
+            .expect("Failed to write to disk");
         }
     }
 
