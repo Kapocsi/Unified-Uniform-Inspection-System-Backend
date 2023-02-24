@@ -43,6 +43,7 @@ pub mod data {
         pub username: Option<String>,
         pub uuid: String,
         pub inspections: Vec<Inspection>,
+        pub flight: Option<String>,
     }
 
     impl User {
@@ -51,6 +52,7 @@ pub mod data {
                 username: None,
                 uuid: Uuid::new_v4().to_string(),
                 inspections: Vec::new(),
+                flight: None,
             }
         }
         pub fn push_to_data_base(&self) {
