@@ -1,11 +1,20 @@
 #![warn(unused_imports, dead_code)]
 
 pub mod data {
-    use std::{fs};
+    use std::fs;
 
     use actix_web::HttpResponse;
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub enum Flight {
+        Beddoe,
+        Morgan,
+        Spear,
+        Bell,
+        Hill,
+    }
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum Criteria {
@@ -43,7 +52,7 @@ pub mod data {
         pub username: Option<String>,
         pub uuid: String,
         pub inspections: Vec<Inspection>,
-        pub flight: Option<String>,
+        pub flight: Option<Flight>,
     }
 
     impl User {

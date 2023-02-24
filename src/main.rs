@@ -1,10 +1,7 @@
 mod auth;
 mod database;
 
-
 use actix_web::middleware::{Logger, NormalizePath};
-
-
 
 use database::data;
 use serde::{Deserialize, Serialize};
@@ -16,8 +13,6 @@ use futures_util::StreamExt as _;
 
 use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Result};
 use std::fs;
-
-
 
 use actix_cors::Cors;
 
@@ -262,6 +257,33 @@ async fn http_upgrade() -> Result<HttpResponse> {
     Ok(HttpResponse::Found()
         .content_type("text/html")
         .body(file_string))
+}
+
+#[derive(Deserialize)]
+struct SetFlight {
+    uuid: String,
+    flight: data::Flight,
+}
+
+#[post("/set_flight")]
+async fn set_flight(mut payload: web::Payload) -> Result<HttpResponse> {
+    let request: SetFlight = serde_json::de::from_str({
+        let mut bytes = web::BytesMut::new();
+        while let Some(item) = payload.next().await {
+            bytes.extend_from_slice(&item?);
+        }
+        String::from_utf8(bytes.to_vec())
+            .map_err(|_| actix_web::error::ErrorBadRequest("Could not parse request"))?
+            .as_str()
+    })?;
+
+    let mut user = data::User::read_from_database(request.uuid)
+        .map_err(|_| actix_web::error::ErrorNotFound("User not found"))?;
+
+    user.flight = Some(request.flight);
+    user.push_to_data_base();
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 #[actix_web::main]
