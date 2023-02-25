@@ -1,7 +1,10 @@
 mod auth;
 mod database;
 
-use actix_web::middleware::{Logger, NormalizePath};
+use actix_web::{
+    middleware::{Logger, NormalizePath},
+    web::service,
+};
 
 use database::data;
 use serde::{Deserialize, Serialize};
@@ -327,7 +330,9 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(claim_user)
                     .service(validate_uuid)
                     .service(post_generate_user)
-                    .service(get_qrcode_for_user),
+                    .service(get_qrcode_for_user)
+                    .service(serve_flight_list)
+                    .service(set_flight),
             )
             .service(
                 spa()
