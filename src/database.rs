@@ -16,14 +16,6 @@ pub mod data {
         Hill,
     }
 
-    pub const Flights: [&; 4] = [
-        "Beddoe".into(),
-        "Morgan".into(),
-        "Spear".into(),
-        "Bell".into(),
-        "Hill".into(),
-    ];
-
     #[derive(Serialize, Deserialize, Debug)]
     pub enum Criteria {
         PassFail(CriteriaPassFail),
