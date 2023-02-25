@@ -286,6 +286,19 @@ async fn set_flight(mut payload: web::Payload) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().finish())
 }
 
+#[get("/flight_list")]
+async fn serve_flight_list() -> HttpResponse {
+    let flights: [String; 5] = [
+        "Beddoe".into(),
+        "Morgan".into(),
+        "Spear".into(),
+        "Bell".into(),
+        "Hill".into(),
+    ];
+
+    HttpResponse::Found().body(serde_json::to_string(&flights).unwrap())
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();

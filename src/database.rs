@@ -4,7 +4,7 @@ pub mod data {
     use std::fs;
 
     use actix_web::HttpResponse;
-    use serde::{Deserialize, Serialize};
+    use serde::{de::IntoDeserializer, Deserialize, Serialize};
     use uuid::Uuid;
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -15,6 +15,14 @@ pub mod data {
         Bell,
         Hill,
     }
+
+    pub const Flights: [&; 4] = [
+        "Beddoe".into(),
+        "Morgan".into(),
+        "Spear".into(),
+        "Bell".into(),
+        "Hill".into(),
+    ];
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum Criteria {
