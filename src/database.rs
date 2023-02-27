@@ -1,13 +1,13 @@
 #![warn(unused_imports, dead_code)]
 
 pub mod data {
-    use std::fs;
+    use std::{fs};
 
     use actix_web::HttpResponse;
-    use serde::{de::IntoDeserializer, Deserialize, Serialize};
+    use serde::{Deserialize, Serialize};
     use uuid::Uuid;
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum Flight {
         Beddoe,
         Morgan,
@@ -16,21 +16,21 @@ pub mod data {
         Hill,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum Criteria {
         PassFail(CriteriaPassFail),
         Graded(CriteriaGraded),
         Comment(Option<String>),
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct CriteriaPassFail {
         pub category_name: String,
         pub description: String,
         pub state: Option<bool>,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct CriteriaGraded {
         /// This is where the text in the rubric should be scored, their index is taken to be the
         /// score
@@ -39,14 +39,14 @@ pub mod data {
         pub state: Option<u8>,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Inspection {
         pub name: String,
         pub criteria: Vec<Criteria>,
         pub date: Option<i64>,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct User {
         // User Info
         pub username: Option<String>,
@@ -57,12 +57,14 @@ pub mod data {
 
     impl User {
         pub fn new() -> User {
-            User {
+            let new_user = User {
                 username: None,
                 uuid: Uuid::new_v4().to_string(),
                 inspections: Vec::new(),
                 flight: None,
-            }
+            };
+            add_user_to_index(&new_user);
+            new_user
         }
         pub fn push_to_data_base(&self) {
             fs::write(
@@ -103,5 +105,65 @@ pub mod data {
                 .expect("Invalid Yaml in Inspection List");
 
         Ok(inspection_lists)
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct FlightIndexItem {
+        user_uuid: String,
+        flight: Option<Flight>,
+        name: Option<String>,
+    }
+
+    impl From<&User> for FlightIndexItem {
+        fn from(value: &User) -> Self {
+            let value = value.clone();
+            Self {
+                user_uuid: value.uuid,
+                name: value.username,
+                flight: value.flight,
+            }
+        }
+    }
+
+    /// Reads all user and stores their uuid and flight
+    pub fn index_users() -> Result<Vec<FlightIndexItem>, std::io::Error> {
+        let files = fs::read_dir("./database/users/")?;
+        let users: Vec<FlightIndexItem> = files
+            .into_iter()
+            .filter_map(|x| x.ok())
+            .filter_map(|x| {
+                serde_json::from_str::<User>(fs::read_to_string(x.path()).ok()?.as_str()).ok()
+            })
+            .map(|x| FlightIndexItem {
+                user_uuid: x.uuid,
+                flight: x.flight,
+                name: x.username,
+            })
+            .collect();
+
+        fs::write(
+            "./database/flight-index.json",
+            serde_json::to_string(&users)?,
+        )?;
+
+        println!("{:#?}", users);
+
+        Ok(users)
+    }
+
+    pub fn read_user_index() -> Result<Vec<FlightIndexItem>, std::io::Error> {
+        Ok(serde_json::from_str::<Vec<FlightIndexItem>>(
+            fs::read_to_string("./database/flight-index.json")?.as_str(),
+        )?)
+    }
+
+    pub fn add_user_to_index(u: &User) -> Result<(), std::io::Error> {
+        let mut users = read_user_index()?;
+        users.push(u.into());
+
+        fs::write(
+            "./database/flight-index.json",
+            serde_json::ser::to_string(&users)?,
+        )
     }
 }
