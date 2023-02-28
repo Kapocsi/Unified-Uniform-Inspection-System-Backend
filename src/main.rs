@@ -299,7 +299,7 @@ async fn set_flight(mut payload: web::Payload) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().finish())
 }
 
-#[get("/user_index")]
+#[post("/user_index")]
 async fn user_index(mut payload: web::Payload) -> Result<HttpResponse> {
     let request: Token = serde_json::de::from_str({
         let mut bytes = web::BytesMut::new();
