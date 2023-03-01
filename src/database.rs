@@ -1,7 +1,7 @@
 #![warn(unused_imports, dead_code)]
 
 pub mod data {
-    use std::{fs};
+    use std::fs;
 
     use actix_web::HttpResponse;
     use serde::{Deserialize, Serialize};
@@ -53,6 +53,7 @@ pub mod data {
         pub uuid: String,
         pub inspections: Vec<Inspection>,
         pub flight: Option<Flight>,
+        pub is_dev_user: bool,
     }
 
     impl User {
@@ -62,8 +63,10 @@ pub mod data {
                 uuid: Uuid::new_v4().to_string(),
                 inspections: Vec::new(),
                 flight: None,
+                // REMOVE THIS FLAG LATER
+                is_dev_user: true,
+                // REMOVE THIS FLAG LATER
             };
-            add_user_to_index(&new_user);
             new_user
         }
         pub fn push_to_data_base(&self) {
@@ -71,7 +74,8 @@ pub mod data {
                 format!("database/users/{}.json", &self.uuid),
                 serde_json::ser::to_string(&self).expect("Failed to serilize user"),
             )
-            .expect("failed to write to disk")
+            .expect("failed to write to disk");
+            add_user_to_index(self).expect("Failed To index user");
         }
         pub fn push_inspection(&mut self, inspec: Inspection) {
             let mut inspect = inspec;
@@ -117,6 +121,16 @@ pub mod data {
     impl From<&User> for FlightIndexItem {
         fn from(value: &User) -> Self {
             let value = value.clone();
+            Self {
+                user_uuid: value.uuid,
+                name: value.username,
+                flight: value.flight,
+            }
+        }
+    }
+
+    impl From<User> for FlightIndexItem {
+        fn from(value: User) -> Self {
             Self {
                 user_uuid: value.uuid,
                 name: value.username,

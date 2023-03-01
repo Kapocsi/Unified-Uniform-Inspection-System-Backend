@@ -6,8 +6,9 @@ pub mod database {
     use std::fs;
 
     use chrono;
-    use crypto::bcrypt;
     use rand::random;
+
+    use crypto::bcrypt;
 
     const USERNAMES_PATH: &str = "./database/auth_users/usernames.csv";
 
@@ -46,11 +47,8 @@ pub mod database {
             let usernames = fs::read_to_string(USERNAMES_PATH.to_string())
                 .expect("We should always have this file available");
 
-            let username_taken: bool = &usernames
-                .split(",")
-                .filter(|f| f.clone().clone() == username)
-                .count()
-                >= &1;
+            let username_taken: bool =
+                &usernames.split(",").filter(|&f| f == username).count() >= &1;
             match username_taken {
                 true => Err(UserError::UsernameDuplicate),
                 false => {
@@ -63,7 +61,7 @@ pub mod database {
                     .expect("we should be able to write here at all times");
 
                     Ok(User {
-                        salt: salt.clone(),
+                        salt,
                         uuid: Uuid::new_v4().to_string(),
                         username,
                         password_hash: {
@@ -120,7 +118,7 @@ pub mod database {
         }
 
         pub fn accosiate_token(&mut self) {
-            self.tokens.push(Token::new(self.uuid.clone()))
+            self.tokens.push(Token::new((*self.uuid).to_string()))
         }
 
         pub fn push_to_disk(self) {
