@@ -53,7 +53,7 @@ pub mod data {
         pub uuid: String,
         pub inspections: Vec<Inspection>,
         pub flight: Option<Flight>,
-        pub is_dev_user: bool,
+        pub dev_user: bool,
     }
 
     impl User {
@@ -64,7 +64,7 @@ pub mod data {
                 inspections: Vec::new(),
                 flight: None,
                 // REMOVE THIS FLAG LATER
-                is_dev_user: false,
+                dev_user: false,
                 // REMOVE THIS FLAG LATER
             };
             new_user
