@@ -357,6 +357,7 @@ async fn bulk_new_user(mut payload: web::Payload) -> Result<HttpResponse> {
             new_user.username = n.clone();
             new_user.flight = (&request.flight).clone();
             new_user.push_to_data_base();
+            new_user.is_dev_user = true;
             new_user.into()
         })
         .collect();

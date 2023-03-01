@@ -64,7 +64,7 @@ pub mod data {
                 inspections: Vec::new(),
                 flight: None,
                 // REMOVE THIS FLAG LATER
-                is_dev_user: true,
+                is_dev_user: false,
                 // REMOVE THIS FLAG LATER
             };
             new_user
