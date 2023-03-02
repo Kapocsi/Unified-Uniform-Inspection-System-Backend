@@ -248,15 +248,9 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
             user.push_to_data_base();
             Ok(HttpResponse::Ok().finish())
         }
-        _ => {
-            //Start a re-index of the users; this is bad code but should be fast enought for 99% of
-            // cases
-            std::thread::spawn(|| index_users());
-
-            Err(actix_web::error::ErrorForbidden(
-                "Forbiden username already set",
-            ))
-        }
+        _ => Err(actix_web::error::ErrorForbidden(
+            "Forbiden username already set",
+        )),
     }
 }
 
@@ -294,8 +288,6 @@ async fn set_flight(mut payload: web::Payload) -> Result<HttpResponse> {
 
     user.flight = Some(request.flight);
     user.push_to_data_base();
-
-    std::thread::spawn(|| index_users());
 
     Ok(HttpResponse::Ok().finish())
 }

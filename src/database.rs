@@ -201,13 +201,13 @@ pub mod data {
         )?)
     }
 
-    pub fn add_user_to_index(u: &User) -> Result<(), std::io::Error> {
-        let mut users = read_user_index()?;
-        users.push(u.into());
-
-        fs::write(
-            "./database/flight-index.json",
-            serde_json::ser::to_string(&users)?,
-        )
-    }
+    // pub fn add_user_to_index(u: &User) -> Result<(), std::io::Error> {
+    //     let mut users = read_user_index()?;
+    //     users.push(u.into());
+    //
+    //     fs::write(
+    //         "./database/flight-index.json",
+    //         serde_json::ser::to_string(&users)?,
+    //     )
+    // }
 }
