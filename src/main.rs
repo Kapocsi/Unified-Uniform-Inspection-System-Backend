@@ -379,6 +379,8 @@ async fn serve_flight_list() -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
+    index_users()?;
+
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     ssl_builder
         .set_private_key_file(
