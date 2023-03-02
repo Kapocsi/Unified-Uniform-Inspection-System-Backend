@@ -75,7 +75,8 @@ pub mod data {
                 serde_json::ser::to_string(&self).expect("Failed to serilize user"),
             )
             .expect("failed to write to disk");
-            add_user_to_index(self).expect("Failed To index user");
+
+            index_users().expect("Failed to index");
         }
         pub fn push_inspection(&mut self, inspec: Inspection) {
             let mut inspect = inspec;
