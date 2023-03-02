@@ -116,6 +116,7 @@ pub mod data {
         user_uuid: String,
         flight: Option<Flight>,
         name: Option<String>,
+        latest_inspection_date: Option<i64>,
     }
 
     impl From<&User> for FlightIndexItem {
@@ -125,16 +126,35 @@ pub mod data {
                 user_uuid: value.uuid,
                 name: value.username,
                 flight: value.flight,
+                latest_inspection_date: value
+                    .inspections
+                    .last()
+                    .unwrap_or(&Inspection {
+                        name: "PLACEHOLDER".into(),
+                        criteria: vec![],
+                        date: None,
+                    })
+                    .date,
             }
         }
     }
 
     impl From<User> for FlightIndexItem {
         fn from(value: User) -> Self {
+            let last_inspection = value
+                .inspections
+                .last()
+                .unwrap_or(&Inspection {
+                    name: "BLANK".into(),
+                    criteria: vec![],
+                    date: None,
+                })
+                .date;
             Self {
                 user_uuid: value.uuid,
                 name: value.username,
                 flight: value.flight,
+                latest_inspection_date: last_inspection,
             }
         }
     }
@@ -152,6 +172,15 @@ pub mod data {
                 user_uuid: x.uuid,
                 flight: x.flight,
                 name: x.username,
+                latest_inspection_date: x
+                    .inspections
+                    .last()
+                    .unwrap_or(&Inspection {
+                        name: "PLACEHOLDER".into(),
+                        criteria: vec![],
+                        date: None,
+                    })
+                    .date,
             })
             .collect();
 
