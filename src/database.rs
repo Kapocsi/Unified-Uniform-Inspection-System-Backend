@@ -132,7 +132,7 @@ pub mod data {
                     .unwrap_or(&Inspection {
                         name: "PLACEHOLDER".into(),
                         criteria: vec![],
-                        date: None,
+                        date: Some(169420),
                     })
                     .date,
             }
@@ -147,7 +147,7 @@ pub mod data {
                 .unwrap_or(&Inspection {
                     name: "BLANK".into(),
                     criteria: vec![],
-                    date: None,
+                    date: Some(269420),
                 })
                 .date;
             Self {
@@ -178,7 +178,7 @@ pub mod data {
                     .unwrap_or(&Inspection {
                         name: "PLACEHOLDER".into(),
                         criteria: vec![],
-                        date: None,
+                        date: Some(369420),
                     })
                     .date,
             })
