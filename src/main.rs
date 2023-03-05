@@ -51,8 +51,11 @@ async fn get_qrcode_for_user(path: web::Path<String>) -> Result<HttpResponse> {
     let user_id = path.into_inner();
     match data::User::read_from_database(user_id.clone()).is_ok() {
         true => {
-            let qr_code =
-                QrCode::new(format!("https://uuis.kapocsi.ca/u/{}", user_id).into_bytes()).unwrap();
+            let qr_code = QrCode::with_error_correction_level(
+                format!("https://uuis.kapocsi.ca/u/{}", user_id).into_bytes(),
+                qrcode::EcLevel::L,
+            )
+            .unwrap();
             // .map_err(|_| actix_web::error::ErrorBadRequest("Could not parse uuid"))?;
             Ok(HttpResponse::Ok().content_type("image/svg+xml").body(
                 qr_code
