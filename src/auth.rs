@@ -134,6 +134,12 @@ pub mod database {
                 Some(t) => users[t] = self,
             };
 
+            // remove all tokens that are expired
+            for user in users.iter_mut() {
+                user.tokens
+                    .retain(|f| f.expirery >= chrono::Utc::now().timestamp());
+            }
+
             fs::write(
                 "./database/auth_users/users.json",
                 serde_json::to_string(&users).expect("failed to Serialize"),
