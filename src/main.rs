@@ -417,10 +417,9 @@ async fn main() -> Result<(), std::io::Error> {
             )
             .wrap(
                 Cors::default()
-                    .allowed_origin("http://localhost")
-                    .allowed_origin("http://uuis.kapocsi.ca")
                     .allowed_origin("http://localhost:5173")
-                    .allowed_origin("https://uuis.kapocsi.ca"),
+                    .allowed_origin("https://uuis.kapocsi.ca")
+                    .allowed_origin("https://uniform.952aircadets.ca"),
             )
             .wrap(NormalizePath::trim())
     })
