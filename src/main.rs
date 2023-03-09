@@ -52,7 +52,7 @@ async fn get_qrcode_for_user(path: web::Path<String>) -> Result<HttpResponse> {
     match data::User::read_from_database(user_id.clone()).is_ok() {
         true => {
             let qr_code = QrCode::with_error_correction_level(
-                format!("https://uuis.kapocsi.ca/u/{}", user_id).into_bytes(),
+                format!("https://uniform.952aircadets.ca/u/{}", user_id).into_bytes(),
                 qrcode::EcLevel::L,
             )
             .unwrap();
