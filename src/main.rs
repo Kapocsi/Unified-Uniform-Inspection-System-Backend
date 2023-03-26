@@ -260,11 +260,12 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
 #[actix_web::get("/{url:.*}")]
 async fn http_upgrade() -> Result<HttpResponse> {
     let file_string = fs::read_to_string("../UUIS-backend/https_upgrade.html")
-        .unwrap()
+        .expect("https upgrade screen missing")
         .replace("\n", "");
 
     Ok(HttpResponse::Found()
         .content_type("text/html")
+        .insert_header(("redirect", "https://uniform.952aircadets.ca"))
         .body(file_string))
 }
 
