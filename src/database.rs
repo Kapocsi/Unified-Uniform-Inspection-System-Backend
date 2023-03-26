@@ -71,7 +71,7 @@ pub mod data {
     }
 
     impl Inspection {
-        fn compute_score(self: &mut Self) {
+        pub fn compute_score(self: &mut Self) {
             let true_false_map = |x: Option<bool>| match x {
                 Some(true) => 1,
                 Some(false) | None => 0,

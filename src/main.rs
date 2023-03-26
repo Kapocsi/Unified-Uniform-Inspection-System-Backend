@@ -145,8 +145,10 @@ async fn add_inspection_to_user(mut payload: web::Payload) -> Result<HttpRespons
 
 #[get("/inspections.json")]
 async fn return_inspections() -> Result<HttpResponse> {
-    let inspections = data::load_inspection_list()
+    let mut inspections = data::load_inspection_list()
         .map_err(|_| actix_web::error::ErrorInternalServerError("Internal Error Occured"))?;
+
+    inspections.iter_mut().for_each(|f| f.compute_score());
 
     println!("Served inspection list");
 
