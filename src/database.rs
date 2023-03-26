@@ -44,6 +44,20 @@ pub mod data {
         pub name: String,
         pub criteria: Vec<Criteria>,
         pub date: Option<i64>,
+        pub out_of: Option<u16>,
+        pub score: Option<u16>,
+    }
+
+    impl Default for Inspection {
+        fn default() -> Self {
+            Self {
+                name: "".into(),
+                criteria: vec![],
+                date: None,
+                out_of: None,
+                score: None,
+            }
+        }
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,6 +68,33 @@ pub mod data {
         pub inspections: Vec<Inspection>,
         pub flight: Option<Flight>,
         pub dev_user: bool,
+    }
+
+    impl Inspection {
+        fn compute_score(self: &mut Self) {
+            let true_false_map = |x: Option<bool>| match x {
+                Some(true) => 1,
+                Some(false) | None => 0,
+            };
+
+            let out_of_map = |x: &Criteria| -> u16 {
+                match x {
+                    Criteria::Graded(t) => t.description.len() as u16,
+                    Criteria::PassFail(_) => 1,
+                    Criteria::Comment(_) => 0,
+                }
+            };
+            let score_map = |x: &Criteria| -> u16 {
+                match x {
+                    Criteria::Graded(t) => t.state.unwrap_or(0).into(),
+                    Criteria::PassFail(t) => true_false_map(t.state),
+                    Criteria::Comment(_) => 0,
+                }
+            };
+
+            self.score = Some(self.criteria.iter().map(score_map).sum());
+            self.out_of = Some(self.criteria.iter().map(out_of_map).sum());
+        }
     }
 
     impl User {
@@ -83,6 +124,9 @@ pub mod data {
             if inspect.date.is_none() {
                 inspect.date = Some(chrono::Utc::now().timestamp())
             }
+
+            inspect.compute_score();
+
             self.inspections.push(inspect);
         }
         pub fn read_from_database(uuid: String) -> Result<User, HttpResponse> {
@@ -97,6 +141,7 @@ pub mod data {
 
             inspections.sort_by_key(|f| f.date.unwrap_or(0));
             inspections.reverse();
+            inspections.iter_mut().for_each(|f| f.compute_score());
 
             user.inspections = inspections;
 
@@ -134,6 +179,8 @@ pub mod data {
                         name: "PLACEHOLDER".into(),
                         criteria: vec![],
                         date: Some(169420),
+                        out_of: None,
+                        score: None,
                     })
                     .date,
             }
@@ -149,6 +196,8 @@ pub mod data {
                     name: "BLANK".into(),
                     criteria: vec![],
                     date: Some(269420),
+                    out_of: None,
+                    score: None,
                 })
                 .date;
             Self {
@@ -180,6 +229,8 @@ pub mod data {
                         name: "PLACEHOLDER".into(),
                         criteria: vec![],
                         date: Some(369420),
+                        out_of: None,
+                        score: None,
                     })
                     .date,
             })

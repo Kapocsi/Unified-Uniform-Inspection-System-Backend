@@ -96,27 +96,27 @@ pub mod database {
             return user;
         }
 
-        pub fn authenticate_user(username: String, password: String) -> bool {
-            let users: Vec<User> = serde_json::de::from_str(
-                &fs::read_to_string("./database/auth_users/users.json")
-                    .expect("We should always get file here"),
-            )
-            .expect("we should always have a good json");
-
-            users
-                .iter()
-                .filter(|f| {
-                    (f.username == username)
-                        && (f.password_hash == {
-                            let mut hash: [u8; 24] = [0; 24];
-                            bcrypt::bcrypt(10, &f.salt, password.as_bytes(), &mut hash);
-                            hash
-                        })
-                })
-                .count()
-                == 1
-        }
-
+        // pub fn authenticate_user(username: String, password: String) -> bool {
+        //     let users: Vec<User> = serde_json::de::from_str(
+        //         &fs::read_to_string("./database/auth_users/users.json")
+        //             .expect("We should always get file here"),
+        //     )
+        //     .expect("we should always have a good json");
+        //
+        //     users
+        //         .iter()
+        //         .filter(|f| {
+        //             (f.username == username)
+        //                 && (f.password_hash == {
+        //                     let mut hash: [u8; 24] = [0; 24];
+        //                     bcrypt::bcrypt(10, &f.salt, password.as_bytes(), &mut hash);
+        //                     hash
+        //                 })
+        //         })
+        //         .count()
+        //         == 1
+        // }
+        //
         pub fn accosiate_token(&mut self) {
             self.tokens.push(Token::new((*self.uuid).to_string()))
         }

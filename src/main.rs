@@ -1,11 +1,7 @@
 mod auth;
 mod database;
 
-use actix_web::{
-    dev::Payload,
-    middleware::{Logger, NormalizePath},
-    HttpMessage,
-};
+use actix_web::middleware::{Logger, NormalizePath};
 
 use database::data::{self, index_users, read_user_index, Flight};
 use serde::{Deserialize, Serialize};
