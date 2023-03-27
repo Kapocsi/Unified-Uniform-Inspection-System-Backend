@@ -255,6 +255,7 @@ pub mod data {
     #[derive(Debug, Serialize, Deserialize)]
     pub struct InspectionScore {
         name: String,
+        date: Option<i64>,
         score: u16,
         out_of: u16,
     }
@@ -279,6 +280,7 @@ pub mod data {
                     .iter()
                     .map(|f| InspectionScore {
                         name: f.clone().name,
+                        date: f.date,
                         score: f.score.unwrap_or(0),
                         out_of: f.out_of.unwrap_or(0),
                     })
