@@ -252,6 +252,49 @@ pub mod data {
         )?)
     }
 
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct InspectionScore {
+        name: String,
+        score: u16,
+        out_of: u16,
+    }
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct ScoreIndexItem {
+        uuid: String,
+        name: Option<String>,
+        flight: Option<Flight>,
+        scores: Vec<InspectionScore>,
+    }
+
+    pub fn get_user_scores() -> Result<Vec<ScoreIndexItem>, std::io::Error> {
+        // Read all users
+        let files = fs::read_dir("./database/users/")?;
+        let score_index: Vec<ScoreIndexItem> = files
+            .into_iter()
+            .filter_map(|f| fs::read_to_string(f.ok()?.path()).ok())
+            .filter_map(|f| serde_json::from_str::<User>(f.as_str()).ok())
+            .map(|user| {
+                let inspections: Vec<InspectionScore> = user
+                    .inspections
+                    .iter()
+                    .map(|f| InspectionScore {
+                        name: f.clone().name,
+                        score: f.score.unwrap_or(0),
+                        out_of: f.out_of.unwrap_or(0),
+                    })
+                    .collect();
+
+                ScoreIndexItem {
+                    uuid: user.uuid,
+                    name: user.username,
+                    flight: user.flight,
+                    scores: inspections,
+                }
+            })
+            .collect();
+        Ok(score_index)
+    }
+
     // pub fn add_user_to_index(u: &User) -> Result<(), std::io::Error> {
     //     let mut users = read_user_index()?;
     //     users.push(u.into());
