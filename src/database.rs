@@ -16,21 +16,21 @@ pub mod data {
         Hill,
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
     pub enum Criteria {
         PassFail(CriteriaPassFail),
         Graded(CriteriaGraded),
         Comment(Option<String>),
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
     pub struct CriteriaPassFail {
         pub category_name: String,
         pub description: String,
         pub state: Option<bool>,
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
     pub struct CriteriaGraded {
         /// This is where the text in the rubric should be scored, their index is taken to be the
         /// score
@@ -39,7 +39,7 @@ pub mod data {
         pub state: Option<u8>,
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
     pub struct Inspection {
         pub name: String,
         pub criteria: Vec<Criteria>,
@@ -59,7 +59,6 @@ pub mod data {
             }
         }
     }
-
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct User {
         // User Info
@@ -95,9 +94,50 @@ pub mod data {
             self.score = Some(self.criteria.iter().map(score_map).sum());
             self.out_of = Some(self.criteria.iter().map(out_of_map).sum());
         }
+
+        pub fn get_score(self: &Self) -> InspectionScore {
+            let true_false_map = |x: Option<bool>| match x {
+                Some(true) => 1,
+                Some(false) | None => 0,
+            };
+
+            let out_of_map = |x: &Criteria| -> u16 {
+                match x {
+                    Criteria::Graded(t) => t.description.len() as u16,
+                    Criteria::PassFail(_) => 1,
+                    Criteria::Comment(_) => 0,
+                }
+            };
+            let score_map = |x: &Criteria| -> u16 {
+                match x {
+                    Criteria::Graded(t) => t.state.unwrap_or(0).into(),
+                    Criteria::PassFail(t) => true_false_map(t.state),
+                    Criteria::Comment(_) => 0,
+                }
+            };
+
+            let score = self.criteria.iter().map(score_map).sum();
+            let out_of = self.criteria.iter().map(out_of_map).sum();
+
+            InspectionScore { score, out_of }
+        }
+    }
+
+    #[derive(Debug, Deserialize, Serialize)]
+    pub struct InspectionScore {
+        score: u16,
+        out_of: u16,
     }
 
     impl User {
+        fn get_latest_inspection_date(&self) -> Option<i64> {
+            self.inspections.last()?.date
+        }
+
+        fn get_latest_inspection_score(&self) -> Option<InspectionScore> {
+            Some(self.inspections.last()?.get_score())
+        }
+
         pub fn new() -> User {
             let new_user = User {
                 username: None,
@@ -143,6 +183,8 @@ pub mod data {
             inspections.reverse();
             inspections.iter_mut().for_each(|f| f.compute_score());
 
+            print!("{:#?}", inspections);
+
             user.inspections = inspections;
 
             Ok(user)
@@ -163,48 +205,34 @@ pub mod data {
         flight: Option<Flight>,
         name: Option<String>,
         latest_inspection_date: Option<i64>,
+        latest_inspection_score: Option<InspectionScore>,
     }
 
     impl From<&User> for FlightIndexItem {
         fn from(value: &User) -> Self {
             let value = value.clone();
+            let latest_inspection_date = value.get_latest_inspection_date();
+            let latest_inspection_score = value.get_latest_inspection_score();
             Self {
                 user_uuid: value.uuid,
                 name: value.username,
                 flight: value.flight,
-                latest_inspection_date: value
-                    .inspections
-                    .last()
-                    .unwrap_or(&Inspection {
-                        name: "PLACEHOLDER".into(),
-                        criteria: vec![],
-                        date: None,
-                        out_of: None,
-                        score: None,
-                    })
-                    .date,
+                latest_inspection_date,
+                latest_inspection_score,
             }
         }
     }
 
     impl From<User> for FlightIndexItem {
         fn from(value: User) -> Self {
-            let last_inspection = value
-                .inspections
-                .last()
-                .unwrap_or(&Inspection {
-                    name: "BLANK".into(),
-                    criteria: vec![],
-                    date: None,
-                    out_of: None,
-                    score: None,
-                })
-                .date;
+            let last_inspection = value.get_latest_inspection_date();
+            let latest_inspection_score = value.get_latest_inspection_score();
             Self {
                 user_uuid: value.uuid,
                 name: value.username,
                 flight: value.flight,
                 latest_inspection_date: last_inspection,
+                latest_inspection_score,
             }
         }
     }
@@ -212,27 +240,23 @@ pub mod data {
     /// Reads all user and stores their uuid and flight
     pub fn index_users() -> Result<Vec<FlightIndexItem>, std::io::Error> {
         let files = fs::read_dir("./database/users/")?;
+
         let users: Vec<FlightIndexItem> = files
             .into_iter()
             .filter_map(|x| x.ok())
             .filter_map(|x| {
                 serde_json::from_str::<User>(fs::read_to_string(x.path()).ok()?.as_str()).ok()
             })
-            .map(|x| FlightIndexItem {
-                user_uuid: x.uuid,
-                flight: x.flight,
-                name: x.username,
-                latest_inspection_date: x
-                    .inspections
-                    .last()
-                    .unwrap_or(&Inspection {
-                        name: "PLACEHOLDER".into(),
-                        criteria: vec![],
-                        date: None,
-                        out_of: None,
-                        score: None,
-                    })
-                    .date,
+            .map(|x| {
+                let latest_inspection_date = x.get_latest_inspection_date();
+                let latest_inspection_score = x.get_latest_inspection_score();
+                FlightIndexItem {
+                    user_uuid: x.uuid,
+                    flight: x.flight,
+                    name: x.username,
+                    latest_inspection_date,
+                    latest_inspection_score,
+                }
             })
             .collect();
 
@@ -250,51 +274,6 @@ pub mod data {
         Ok(serde_json::from_str::<Vec<FlightIndexItem>>(
             fs::read_to_string("./database/flight-index.json")?.as_str(),
         )?)
-    }
-
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct InspectionScore {
-        name: String,
-        date: Option<i64>,
-        score: u16,
-        out_of: u16,
-    }
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct ScoreIndexItem {
-        uuid: String,
-        name: Option<String>,
-        flight: Option<Flight>,
-        scores: Vec<InspectionScore>,
-    }
-
-    pub fn get_user_scores() -> Result<Vec<ScoreIndexItem>, std::io::Error> {
-        // Read all users
-        let files = fs::read_dir("./database/users/")?;
-        let score_index: Vec<ScoreIndexItem> = files
-            .into_iter()
-            .filter_map(|f| fs::read_to_string(f.ok()?.path()).ok())
-            .filter_map(|f| serde_json::from_str::<User>(f.as_str()).ok())
-            .map(|user| {
-                let inspections: Vec<InspectionScore> = user
-                    .inspections
-                    .iter()
-                    .map(|f| InspectionScore {
-                        name: f.clone().name,
-                        date: f.date,
-                        score: f.score.unwrap_or(0),
-                        out_of: f.out_of.unwrap_or(0),
-                    })
-                    .collect();
-
-                ScoreIndexItem {
-                    uuid: user.uuid,
-                    name: user.username,
-                    flight: user.flight,
-                    scores: inspections,
-                }
-            })
-            .collect();
-        Ok(score_index)
     }
 
     // pub fn add_user_to_index(u: &User) -> Result<(), std::io::Error> {
