@@ -1,22 +1,22 @@
 mod auth;
 mod database;
 
+use crate::auth::database::Token;
+use actix_cors::Cors;
 use actix_web::middleware::{Logger, NormalizePath};
+use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Result};
+use actix_web_lab::web::spa;
 
 use database::data::{self, index_users, read_user_index, Flight};
-use serde::{Deserialize, Serialize};
 
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-
-use actix_web_lab::web::spa;
 use futures_util::StreamExt as _;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use serde::{Deserialize, Serialize};
+use std::{env, fs};
 
-use actix_web::{get, post, web, web::scope, App, HttpResponse, HttpServer, Result};
-use std::fs;
+use env_logger::Env;
 
-use crate::auth::database::Token;
-
-use actix_cors::Cors;
+use dotenv::dotenv;
 
 #[post("/user")]
 async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
@@ -315,29 +315,6 @@ async fn user_index(mut payload: web::Payload) -> Result<HttpResponse> {
     }
 }
 
-#[post("/score_index")]
-async fn score_index(mut payload: web::Payload) -> Result<HttpResponse> {
-    let request: Token = serde_json::de::from_str({
-        let mut bytes = web::BytesMut::new();
-        while let Some(item) = payload.next().await {
-            bytes.extend_from_slice(&item?);
-        }
-        String::from_utf8(bytes.to_vec())
-            .map_err(|_| actix_web::error::ErrorBadRequest("Could not parse request"))?
-            .as_str()
-    })?;
-
-    let scores = data::get_user_scores()?;
-
-    println!("{:#?}", scores);
-
-    match request.check_token_validy() {
-        TokenResponse::Valid => Ok(HttpResponse::Ok().body(serde_json::ser::to_string(&scores)?)),
-        TokenResponse::Invalid => Err(actix_web::error::ErrorForbidden("Invalid Token")),
-        TokenResponse::Expired => Err(actix_web::error::ErrorForbidden("Expired Token")),
-    }
-}
-
 #[derive(Deserialize, Clone)]
 struct BulkUserRequest {
     token: Token,
@@ -397,17 +374,19 @@ async fn serve_flight_list() -> HttpResponse {
 #[actix_web::main]
 async fn main() -> Result<(), std::io::Error> {
     index_users()?;
+    // initlize the .env file
+    dotenv().ok();
+
+    let private_key_path = env::var("PRIVKEY").unwrap();
+    let cert_path = env::var("CERT").unwrap();
+
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     ssl_builder
-        .set_private_key_file(
-            "/etc/letsencrypt/live/uuis.kapocsi.ca/privkey.pem",
-            SslFiletype::PEM,
-        )
+        .set_private_key_file(private_key_path, SslFiletype::PEM)
         .unwrap();
-    ssl_builder
-        .set_certificate_chain_file("/etc/letsencrypt/live/uuis.kapocsi.ca/cert.pem")
-        .unwrap();
+    ssl_builder.set_certificate_chain_file(cert_path).unwrap();
 
     let secure_server = HttpServer::new(|| {
         App::new()
@@ -428,8 +407,7 @@ async fn main() -> Result<(), std::io::Error> {
                     .service(serve_flight_list)
                     .service(set_flight)
                     .service(bulk_new_user)
-                    .service(user_index)
-                    .service(score_index),
+                    .service(user_index),
             )
             .service(
                 spa()
@@ -438,23 +416,35 @@ async fn main() -> Result<(), std::io::Error> {
                     .static_resources_location("../front-end/../front-end/build")
                     .finish(),
             )
-            .wrap(
-                Cors::default()
-                    .allowed_origin("http://localhost:5173")
-                    .allowed_origin("https://uuis.kapocsi.ca")
-                    .allowed_origin("https://uniform.952aircadets.ca"),
-            )
+            .wrap(Cors::default().allowed_origin("https://uniform.952aircadets.ca"))
             .wrap(NormalizePath::trim())
-    })
-    .bind_openssl("0.0.0.0:443", ssl_builder)?
-    .run();
-    let server = HttpServer::new(|| App::new().service(http_upgrade))
-        .bind("0.0.0.0:80")?
-        .run();
+    });
 
-    let (secure_server_result, server_result) = futures::join!(server, secure_server);
-    secure_server_result?;
-    server_result?;
+    let server = HttpServer::new(|| App::new().service(http_upgrade));
+
+    // For testing on a local machine, if compliled in debug the server will run on http for the
+    // "secure" side
+    #[cfg(debug_assertions)]
+    {
+        let secure_server = secure_server.bind("0.0.0.0:80")?.run();
+        let server = server.bind("0.0.0.0:8080")?.run();
+
+        let (secure_server_result, server_result) = futures::join!(server, secure_server);
+        secure_server_result?;
+        server_result?;
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        let secure_server = secure_server
+            .bind_openssl("0.0.0.0:443", ssl_builder)?
+            .run();
+        let server = server.bind("0.0.0.0:80")?.run();
+
+        let (secure_server_result, server_result) = futures::join!(server, secure_server);
+        secure_server_result?;
+        server_result?;
+    }
 
     Ok(())
 }
