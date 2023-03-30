@@ -14,9 +14,8 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Serialize};
 use std::{env, fs};
 
-use env_logger::Env;
-
 use dotenv::dotenv;
+use env_logger::Env;
 
 #[post("/user")]
 async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
@@ -28,8 +27,6 @@ async fn get_user(mut payload: web::Payload) -> Result<HttpResponse> {
         String::from_utf8(bytes.to_vec())
     }
     .map_err(|_| actix_web::error::ErrorBadRequest("could not parse request"))?;
-
-    println!("Fetching User:{}", user_id);
 
     let user = data::User::read_from_database(user_id)
         .map_err(|_| actix_web::error::ErrorNotFound("User not found"))?;
@@ -84,8 +81,6 @@ async fn generate_user() -> Result<HttpResponse> {
     let new_user = data::User::new();
     new_user.push_to_data_base();
 
-    println!("Generated new user {}", new_user.uuid);
-
     let response = HttpResponse::Found()
         .append_header(("location", format!("/u/{}", new_user.uuid)))
         .body(new_user.uuid);
@@ -96,8 +91,6 @@ async fn generate_user() -> Result<HttpResponse> {
 async fn post_generate_user() -> Result<HttpResponse> {
     let new_user = data::User::new();
     new_user.push_to_data_base();
-
-    println!("Generated new user {}", new_user.uuid);
 
     let response = HttpResponse::Found().body(new_user.uuid);
     Ok(response)
@@ -150,8 +143,6 @@ async fn return_inspections() -> Result<HttpResponse> {
 
     inspections.iter_mut().for_each(|f| f.compute_score());
 
-    println!("Served inspection list");
-
     Ok(HttpResponse::Found()
         .body(serde_json::ser::to_string(&inspections).expect("This should always work")))
 }
@@ -176,8 +167,6 @@ async fn login(mut payload: web::Payload) -> Result<HttpResponse> {
             .map_err(|_| actix_web::error::ErrorBadRequest("Could not parse request"))?
             .as_str()
     })?;
-
-    println!("{:?}", request);
 
     Ok(
         match auth_database::User::get_user(request.username, request.password) {
@@ -237,11 +226,6 @@ async fn claim_user(mut payload: web::Payload) -> Result<HttpResponse> {
     })?;
     let mut user = data::User::read_from_database(request.uuid)
         .map_err(|_| actix_web::error::ErrorNotFound("User not found"))?;
-
-    println!(
-        "setting {:?} as username for {:?}",
-        user.username, user.uuid
-    );
 
     match user.username {
         None => {

@@ -183,8 +183,6 @@ pub mod data {
             inspections.reverse();
             inspections.iter_mut().for_each(|f| f.compute_score());
 
-            print!("{:#?}", inspections);
-
             user.inspections = inspections;
 
             Ok(user)
@@ -264,8 +262,6 @@ pub mod data {
             "./database/flight-index.json",
             serde_json::to_string(&users)?,
         )?;
-
-        println!("{:#?}", users);
 
         Ok(users)
     }
