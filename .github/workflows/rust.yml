@@ -10,9 +10,75 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-and-upload:
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-msvc
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        target: ${{ matrix.target }}
+        override: true
+
     - name: Build
-      run: cargo build --target  x86_64-unknown-linux-gnu --release
+      run: cargo build --release --target ${{ matrix.target }}
+
+    - name: Upload Artifacts
+      if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+      uses: actions/upload-artifact@v2
+      with:
+        name: binary-${{ matrix.target }}
+        path: target/${{ matrix.target }}/release/*
+
+  create-release:
+    needs: build-and-upload
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v2
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.sha }}
+        release_name: Release ${{ github.sha }}
+        draft: true
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./target/x86_64-unknown-linux-gnu/uuis_backend
+        asset_name: uuis_backend
+        asset_content_type: application/octet-stream
+
+    - name: Upload another Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./target/x86_64-pc-windows-msvc/your_binary_name.exe
+        asset_name: uuis_backend.exe
+        asset_content_type: application/octet-stream
+
+    # ... Repeat the "Upload Release Asset" step for other targets ...
+
