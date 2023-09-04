@@ -400,7 +400,11 @@ async fn main() -> Result<(), std::io::Error> {
                     .static_resources_location("../front-end/../front-end/build")
                     .finish(),
             )
-            .wrap(Cors::default().allowed_origin("https://uniform.952aircadets.ca"))
+            .wrap(
+                Cors::default()
+                    .allowed_origin("https://uniform.952aircadets.ca")
+                    .allowed_origin("https://beta.uniform.kapocsi.ca/"),
+            )
             .wrap(NormalizePath::trim())
     });
 
