@@ -123,7 +123,7 @@ async fn add_inspection_to_user(mut payload: web::Payload) -> Result<HttpRespons
             inspectee.push_inspection(request.inspection_to_post);
             inspectee.push_to_data_base();
 
-            Ok(actix_web::HttpResponse::Ok().finish())
+            Ok(actix_web::HttpResponse::Ok().body(serde_json::to_string(&read_user_index()?)?))
         }
         auth_database::TokenResponse::Invalid => {
             Err(actix_web::error::ErrorForbidden("Invalid Token"))
@@ -403,7 +403,8 @@ async fn main() -> Result<(), std::io::Error> {
             .wrap(
                 Cors::default()
                     .allowed_origin("https://uniform.952aircadets.ca")
-                    .allowed_origin("https://beta.uniform.kapocsi.ca/"),
+                    .allowed_origin("https://beta.uniform.kapocsi.ca")
+                    .allowed_origin("http://127.0.0.1:5173"),
             )
             .wrap(NormalizePath::trim())
     });
@@ -414,8 +415,8 @@ async fn main() -> Result<(), std::io::Error> {
     // "secure" side
     #[cfg(debug_assertions)]
     {
-        let secure_server = secure_server.bind("0.0.0.0:80")?.run();
-        let server = server.bind("0.0.0.0:8080")?.run();
+        let secure_server = secure_server.bind("0.0.0.0:8080")?.run();
+        let server = server.bind("0.0.0.0:8090")?.run();
 
         let (secure_server_result, server_result) = futures::join!(server, secure_server);
         secure_server_result?;
